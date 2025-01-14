@@ -1,0 +1,10 @@
+# for grouping of training run
+agent: "DLNVMeta" #lERMMeta
+
+n_epochs: 1
+n_steps: 1000
+
+early_stopping_patience: 50
+early_stopping_warmup: 200
+save_best: True
+results_dir: "results"

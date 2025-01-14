@@ -1,0 +1,24 @@
+# Run_specific parameters
+
+dataset_type: "arma_10_10"
+dataset_number: 1
+lag_window_params:
+    lag_window: 10
+    include_y: True
+    pre_calc: True
+normalize_features: False
+
+# Other parameters:
+unit_size: 0.01
+
+# General parameters for experimental set-up
+size_test: 10000
+size_val: 10000
+
+env_kwargs:
+    underage_cost: [1]
+    overage_cost: [2.33333] #0.11111, 0.42857, 1, 2.33333
+    q_bound_low: [-1.]
+    q_bound_high: [1.]
+    gamma: 0.999 # added for learning stability, not relevant for our problem as such
+    horizon_train: 365
