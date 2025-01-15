@@ -1,5 +1,5 @@
 # for grouping of training run
-agent: "DLNVMeta" #lERMMeta
+agent: "Greedy" #lERMMeta
 
 n_epochs: 1
 n_steps: 1000

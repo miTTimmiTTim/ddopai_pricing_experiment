@@ -3,7 +3,6 @@
 ### Agent functions:
 
 SAC:
-  lag_window: 16 # 16
   learning_rate_actor: 0.0001
   learning_rate_critic: 0.005
   initial_replay_size: 8192
@@ -23,4 +22,6 @@ SAC:
   device: "cpu"
 
 Greedy:
-  
+  ex_prices: [[0.5], [5]]
+  link: linear
+

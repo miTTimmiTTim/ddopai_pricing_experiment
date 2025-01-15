@@ -1,24 +1,28 @@
 # Run_specific parameters
 
-dataset_type: "arma_10_10"
+dataset_type: "online_pricing"
 dataset_number: 1
-lag_window_params:
-    lag_window: 10
-    include_y: True
-    pre_calc: True
-normalize_features: False
 
+normalize_features: False
+lag_window_params: null
 # Other parameters:
 unit_size: 0.01
 
 # General parameters for experimental set-up
-size_test: 10000
-size_val: 10000
+nb_features: 1
+covariance: 0.2
+noise_std: 0.5
+function_form: "linear"
+size_train: 1000
+size_test: 0
+size_val: 0
 
 env_kwargs:
-    underage_cost: [1]
-    overage_cost: [2.33333] #0.11111, 0.42857, 1, 2.33333
-    q_bound_low: [-1.]
-    q_bound_high: [1.]
-    gamma: 0.999 # added for learning stability, not relevant for our problem as such
-    horizon_train: 365
+    alpha: [10]
+    beta: [-1]
+    p_bound_low: 0
+    p_bound_high: 10
+
+    gamma: 0.0 # added for learning stability, not relevant for our problem as such
+    horizon_train: 1000
+

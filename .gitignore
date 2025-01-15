@@ -16,6 +16,9 @@ __pycache__/
 *.csv
 
 
+# wandb folder
+wandb/
+
 # Distribution / packaging
 .Python
 build/

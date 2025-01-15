@@ -55,16 +55,19 @@ def main():
     round_action = RoundAction(unit_size=config_env["unit_size"])
     postprocessors = [round_action]
 
-    environment = set_up_env(ENVCLASS, raw_data, val_index_start, test_index_start, config_env, postprocessors)
+    environment = set_up_env_online(ENVCLASS, raw_data, val_index_start, test_index_start, config_env, postprocessors)
 
     logging.info("######################### Setting up agent #####################################")
 
     logging.info(f"Agent: {agent_name}")
 
 
+    logging.info(f"Agent: {agent_name}")
+
+
     if AgentClass.train_mode == "env_interaction":
         if "link" in config_agent:
-            glm_link, price_function = set_up_agent(config_agent["link"])
+            glm_link, price_function = set_up_agent(AgentClass, environment, config_agent)
             config_agent["g"] = glm_link
             config_agent["price_function"] = price_function
             del config_agent["link"]
@@ -82,7 +85,7 @@ def main():
 
     logging.info("######################### Training agent #######################################")
 
-    run_experiment(
+    dataset = run_experiment(
         agent,
         environment,
         n_epochs=config_train["n_epochs"],
@@ -93,7 +96,9 @@ def main():
         tracking="wandb",
         eval_step_info=False,
         print_freq=1,
-        results_dir = RESULTS_DIR
+        results_dir = RESULTS_DIR,
+        return_dataset=True,
+        return_score=False
     )
 
     
