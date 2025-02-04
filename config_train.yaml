@@ -1,8 +1,8 @@
 # for grouping of training run
 agent: "SAC" #lERMMeta
 
-n_epochs: 3
-n_steps: 5000
+n_epochs: 10
+n_steps: null 
 
 early_stopping_patience: 50
 early_stopping_warmup: 200

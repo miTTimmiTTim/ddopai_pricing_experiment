@@ -3,6 +3,7 @@
 dataset_type: "online_pricing"
 dataset_number: 1
 
+env_class: "DynamicPricingInvEnv" # DynamicPricingInvEnv
 normalize_features: False
 lag_window_params: null
 # Other parameters:
@@ -15,18 +16,16 @@ size_test: 0
 size_val: 0
 
 env_kwargs:
-    alpha: [[10, -0.34, -0.37,  0.15, -0.32, -0.24, -0.27, -0.09,  0.15,  0.23], 
-            [10, -0.02,  0.34, -0.04, -0.34,  0.11, -0.28, -0.25, -0.33, -0.11],
-            [10.  , -0.14, -0.16, -0.11,  0.14,  0.03,  0.33, -0.16, -0.2 , 0.15]]
-    beta: [[-1.  ,  -0.36, -0.12,  0.27, -0.4 ,  0.27, -0.22, -0.07,  0.31, -0.23],
-           [-2.  ,  0.35, -0.2 ,  -0.29,  0.23,  -0.28,  0.24,  0.08, -0.33, -0.34], 
-           [-3.  , -0.3 ,  0.08, -0.4 , -0.31, -0.26, -0.03,  0.32, -0.14, -0.07]]
+    alpha: [[10, -0.34, -0.37,  0.15, -0.32, -0.24, -0.27, -0.09,  0.15,  0.23]]
+
+    beta: [[-1.  ,  -0.36, -0.12,  0.27, -0.4 ,  0.27, -0.22, -0.07,  0.31, -0.23]]
     p_bound_low: 0
     p_bound_high: 20
 
+    inv: [[[40000.0]]]
     nb_features: 10
-    covariance: [0.2, 0.6]
-    noise_std: [0.5, 0.3]
+    covariance: [0.2]
+    noise_std: [0.5]
     function_form: ["linear"]
 
     gamma: 0.0 # added for learning stability, not relevant for our problem as such
