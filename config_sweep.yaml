@@ -1,0 +1,9 @@
+method: "grid"
+
+name: "config_sweep"
+num_trials: 1 
+parameters:
+
+  config_train-agent:
+    values: ["Clairvoyant", "SAC", "Greedy", "ILQX", "TS"]
+

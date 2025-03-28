@@ -1,10 +1,10 @@
 # for grouping of training run
-agent: "SAC" #lERMMeta
+agent: "MTS" #lERMMeta
 
-n_epochs: 10
+n_epochs: 50
 n_steps: null 
 
 early_stopping_patience: 50
-early_stopping_warmup: 200
+early_stopping_warmup: 1000
 save_best: True
 results_dir: "results"
