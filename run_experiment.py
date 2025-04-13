@@ -8,9 +8,11 @@ import numpy as np
 import torch
 import datetime
 from ddopai.envs.pricing.dynamic import DynamicPricingEnv
+from ddopai.envs.pricing.dynamic_RL2 import RL2DynamicPricingEnv
+from ddopai.envs.pricing.dynamic_lag import LagDynamicPricingEnv
 from ddopai.envs.pricing.dynamic_inventory import DynamicPricingInvEnv
 from ddopai.envs.actionprocessors import ClipAction, RoundAction
-
+from ddopai.agents.obsprocessors import ConvertDictSpace
 from ddopai.experiments.experiment_functions_online import run_experiment
 from ddopai.experiments.meta_experiment_functions import *
 import requests
@@ -26,6 +28,7 @@ import pickle
 import argparse
 import sys
 import traceback
+import random
 
 logging_level = logging.INFO
 logging.basicConfig(level=logging_level)
@@ -33,11 +36,15 @@ logging.basicConfig(level=logging_level)
 LIBRARIES_TO_TRACK = ["ddopai", "mushroom_rl"]
 RESULTS_DIR = "results"
 
-def get_ENVCLASS(class_name: str):
+def get_ENVCLASS(class_name):
     if class_name == "DynamicPricingEnv":
         return DynamicPricingEnv
     elif class_name == "DynamicPricingInvEnv":
         return DynamicPricingInvEnv
+    elif class_name == "LagDynamicPricingEnv":
+        return LagDynamicPricingEnv
+    elif class_name == "RL2DynamicPricingEnv":
+        return RL2DynamicPricingEnv
     else:
         raise ValueError(f"Unknown class name {class_name}")
 
@@ -127,26 +134,44 @@ def run_pipeline(sweep_config, project_name="pricing_cMDP", config_env="config_e
     agent_name = config_train["agent"]
     config_agent = config_agent[config_train["agent"]]
     
+    if config_env['lag_window_params'].get("lag_window") is not None:
+        for env_kwargs in config_env["env_kwargs"]:
+            env_kwargs["lag_window"] = config_env['lag_window_params']['lag_window']
+            env_kwargs["env_class"] = "LagDynamicPricingEnv"
+
+    if agent_name == "RL2PPO":
+        for env_kwargs in config_env["env_kwargs"]:
+            env_kwargs["env_class"] = "RL2DynamicPricingEnv"
+
     artifact = wandb.use_artifact(sweep_config['artifact'])
     path = artifact.download()
     raw_data_path = os.path.join(path, 'raw_data.pkl')
     with open(raw_data_path, 'rb') as f:
         raw_data = pickle.load(f)
-    
+    # setting the random seeds 
+    np.random.seed(artifact.metadata["seed"])
+    torch.manual_seed(artifact.metadata["seed"])
+    random.seed(artifact.metadata["seed"])
+    wandb.config.update({"seed": artifact.metadata["seed"]})
+    #
     round_action = RoundAction(unit_size=config_env["unit_size"])
     postprocessors = [round_action]
     environments = prepare_env_online(
-        get_ENVCLASS=get_ENVCLASS, 
-        raw_data=raw_data, 
-        val_index_start=0, 
-        test_index_start=0, 
-        config_env=config_env, 
+        get_ENVCLASS=get_ENVCLASS,
+        raw_data=raw_data,
+        val_index_start=0,
+        test_index_start=0,
+        config_env=config_env,
         postprocessors=postprocessors
     )
-    
+
     logging.info(f"Agent: {agent_name}")
 
     if AgentClass.train_mode == "env_interaction":
+        if agent_name in ["SAC", "PPORNN", "RL2PPO"]:
+            obsprocessors = [ConvertDictSpace(keep_time_dim=False, )]
+        else:
+            obsprocessors = []
         if "link" in config_agent:
             glm_link, price_function = set_up_agent(AgentClass, environments[0], config_agent)
             config_agent["g"] = glm_link
@@ -157,23 +182,27 @@ def run_pipeline(sweep_config, project_name="pricing_cMDP", config_env="config_e
                 alpha=environments[0].alpha,
                 beta=environments[0].beta,
                 environment_info=environments[0].mdp_info,
+                obsprocessors=obsprocessors,
                 **config_agent
             )
         else:
             agent = AgentClass(
                 environment_info=environments[0].mdp_info,
+                obsprocessors=obsprocessors,
                 **config_agent
             )
     else:
         raise ValueError("Invalid train_mode for online training")
 
     earlystoppinghandler = set_up_earlystoppinghandler(config_train)
-    
+
     dataset = run_experiment(
         agent,
         environments,
         n_epochs=config_train["n_epochs"],
         n_steps=config_train["n_steps"],
+        n_steps_per_fit=None,
+        n_episodes_per_fit=1,
         early_stopping_handler=earlystoppinghandler,
         save_best=config_train["save_best"],
         run_id=wandb.run.id,
@@ -184,9 +213,9 @@ def run_pipeline(sweep_config, project_name="pricing_cMDP", config_env="config_e
         return_dataset=True,
         return_score=False
     )
-    
+
     wandb.finish()
-    
+
 def train():
     project_name = "pricing_cMDP"
     wandb.init(
@@ -200,7 +229,7 @@ def main(sweep_id, max_runs, project_name):
     if not wandb_key:
         raise ValueError("WandB API key not set in environment variables.")
     wandb.login(key=wandb_key)
-    
+
     wandb.agent(sweep_id, function=train, count=max_runs, project=project_name)
 
 if __name__ == "__main__":
