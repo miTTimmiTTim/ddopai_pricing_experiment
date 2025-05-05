@@ -30,6 +30,8 @@ import sys
 import traceback
 import random
 import concurrent.futures
+from copy import deepcopy
+from collections import defaultdict
 
 logging_level = logging.INFO
 logging.basicConfig(level=logging_level)
@@ -110,10 +112,11 @@ def experiment_worker(artifact_info, config_env, config_agent, config_train, Age
         
         # Update local configuration if needed
         # (Make a local copy of the config objects if required)
-        local_config_env = config_env.copy()
-        local_config_train = config_train.copy()
-        local_config_agent = config_agent.copy()
-        
+        local_config_env = deepcopy(config_env)
+        local_config_train = deepcopy(config_train)
+        local_config_agent = deepcopy(config_agent)
+        n_steps_per_fit = local_config_agent.pop("n_steps_per_fit", None)
+        n_episodes_per_fit = local_config_agent.pop("n_episodes_per_fit", None)
         # Download or locate the artifact raw data
         raw_data_path = os.path.join(artifact_info["path"], 'raw_data.pkl')
         with open(raw_data_path, 'rb') as f:
@@ -131,7 +134,10 @@ def experiment_worker(artifact_info, config_env, config_agent, config_train, Age
             config_env=local_config_env,
             postprocessors=postprocessors
         )
-        
+        # Split environments into train and eval based on eval_percentage
+        number_eval = local_config_train.get("number_eval", 50)
+        eval_envs = np.random.choice(environments, size=number_eval, replace=False).tolist()
+        train_envs = [env for env in environments if env not in eval_envs]
         # Instantiate the agent based on AgentClass and config_agent
         # Replicate the logic from your original pipeline
         if AgentClass.train_mode == "env_interaction":
@@ -163,12 +169,14 @@ def experiment_worker(artifact_info, config_env, config_agent, config_train, Age
         # Run the experiment using your hp experiment function
         # Note: if you intend to use `run_hp_experiment` instead of `run_experiment`, replace accordingly.
         results = run_hp_experiment(
-            agent,
-            environments,
+            agent=agent,
+            train_envs=train_envs,
+            eval_envs=eval_envs,
             n_epochs=local_config_train["n_epochs"],
             n_steps=local_config_train["n_steps"],
-            n_steps_per_fit=None,
-            n_episodes_per_fit=1,
+            val_every=local_config_train["val_every"],
+            n_steps_per_fit=n_steps_per_fit,
+            n_episodes_per_fit=n_episodes_per_fit,
             early_stopping_handler=earlystoppinghandler,
             save_best=local_config_train["save_best"],
             run_id=artifact_info["id"],  # or pass any unique identifier
@@ -226,7 +234,10 @@ def run_pipeline(sweep_config, project_name="pricing_cMDP", config_env="config_e
         for env_kwargs in config_env["env_kwargs"]:
             env_kwargs["lag_window"] = config_env['lag_window_params']['lag_window']
             env_kwargs["env_class"] = "LagDynamicPricingEnv"
-
+    if "gamma" in config_agent:
+        for env_kwargs in config_env["env_kwargs"]:
+            env_kwargs["gamma"] = config_agent["gamma"]
+        del config_agent["gamma"]
     if agent_name == "RL2PPO":
         for env_kwargs in config_env["env_kwargs"]:
             env_kwargs["env_class"] = "RL2DynamicPricingEnv"
@@ -268,52 +279,42 @@ def run_pipeline(sweep_config, project_name="pricing_cMDP", config_env="config_e
                 logging.error("A worker failed: %s", e)
     
     # --- Aggregate results across all parallel runs ---
-    if aggregated_worker_results:
-        # Assume every worker returns the same number of epochs.
-        n_epochs = len(aggregated_worker_results[0])
-        
-        # Build dictionaries to collect the epoch-wise rewards from each worker.
-        epoch_rewards = {epoch: [] for epoch in range(n_epochs)}
-        epoch_true_rewards = {epoch: [] for epoch in range(n_epochs)}
-        
-        # Aggregate the reward data for each epoch across all workers.
-        for worker_result in aggregated_worker_results:
-            for epoch_result in worker_result:
-                epoch_idx = epoch_result["epoch"]
-                final_reward = epoch_result["aggregated_metrics"]["final_reward"]
-                final_true_reward = epoch_result["aggregated_metrics"]["final_true_reward"]
-                epoch_rewards[epoch_idx].append(final_reward)
-                epoch_true_rewards[epoch_idx].append(final_true_reward)
-        
-        # Initialize cumulative sums.
-        cumulative_reward = 0.0
-        cumulative_true_reward = 0.0
-        
-        # Iterate over epochs, compute metrics, and log to WandB.
-        for epoch in sorted(epoch_rewards.keys()):
-            # Compute mean and standard deviation for each epoch.
-            mean_reward = np.mean(epoch_rewards[epoch])
-            std_reward = np.std(epoch_rewards[epoch])
-            mean_true_reward = np.mean(epoch_true_rewards[epoch])
-            std_true_reward = np.std(epoch_true_rewards[epoch])
-            
-            # Update cumulative sums (running cumulative means).
-            cumulative_reward += mean_reward
-            cumulative_true_reward += mean_true_reward
-            
-            # Log per-epoch metrics and the cumulative rewards up to that epoch.
-            wandb.log({
-                f"epoch": epoch,
-                f"mean_reward": mean_reward,
-                f"std_reward": std_reward,
-                f"cumulative_mean_reward": cumulative_reward,
-                f"mean_true_reward": mean_true_reward,
-                f"std_true_reward": std_true_reward,
-                f"cumulative_mean_true_reward": cumulative_true_reward,
-            })
-    else:
+    if not aggregated_worker_results:
         logging.error("No successful worker results were returned.")
-    
+    else:
+        # epoch → list[metric]
+        val_R_dict, val_true_R_dict = defaultdict(list), defaultdict(list)
+
+        # collect metrics from every worker
+        for worker_res in aggregated_worker_results:
+            for ep_res in worker_res:
+                if "val_metrics" not in ep_res:        # skip epochs without validation
+                    continue
+                eidx            = ep_res["epoch"]
+                val_reward      = ep_res["val_metrics"]["val_reward"]
+                val_true_reward = ep_res["val_metrics"]["val_true_reward"]
+
+                val_R_dict[eidx].append(val_reward)
+                val_true_R_dict[eidx].append(val_true_reward)
+
+        # log mean & std for each epoch
+        for e in sorted(val_R_dict.keys()):
+            mean_R   = float(np.mean(val_R_dict[e]))
+            std_R    = float(np.std(val_R_dict[e]))
+            mean_TR  = float(np.mean(val_true_R_dict[e]))
+            std_TR   = float(np.std(val_true_R_dict[e]))
+
+            wandb.log({
+                "epoch"            : e,
+                "mean_reward"      : mean_R,   # Val_R
+                "std_reward"       : std_R,
+                "mean_true_reward" : mean_TR,  # Val_true_R
+                "std_true_reward"  : std_TR
+            })
+
+        logging.info("Logged validation metrics for %d epochs across %d workers",
+                    len(val_R_dict), len(aggregated_worker_results))
+        
     wandb.finish()
     gc.collect()
 

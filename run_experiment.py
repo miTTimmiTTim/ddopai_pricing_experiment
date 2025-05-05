@@ -133,12 +133,18 @@ def run_pipeline(sweep_config, project_name="pricing_cMDP", config_env="config_e
     AgentClass = select_agent(config_train["agent"]) # Select agent class and import dynamically
     agent_name = config_train["agent"]
     config_agent = config_agent[config_train["agent"]]
+    n_steps_per_fit = config_agent.pop("n_steps_per_fit", None)
+    n_episodes_per_fit = config_agent.pop("n_episodes_per_fit", None)
     
     if config_env['lag_window_params'].get("lag_window") is not None:
         for env_kwargs in config_env["env_kwargs"]:
             env_kwargs["lag_window"] = config_env['lag_window_params']['lag_window']
             env_kwargs["env_class"] = "LagDynamicPricingEnv"
-
+    if "gamma" in config_agent:
+        for env_kwargs in config_env["env_kwargs"]:
+            env_kwargs["gamma"] = config_agent["gamma"]
+        del config_agent["gamma"]
+        
     if agent_name == "RL2PPO":
         for env_kwargs in config_env["env_kwargs"]:
             env_kwargs["env_class"] = "RL2DynamicPricingEnv"
@@ -197,21 +203,19 @@ def run_pipeline(sweep_config, project_name="pricing_cMDP", config_env="config_e
     earlystoppinghandler = set_up_earlystoppinghandler(config_train)
 
     dataset = run_experiment(
-        agent,
-        environments,
+        agent=agent,
+        train=environments,
         n_epochs=config_train["n_epochs"],
         n_steps=config_train["n_steps"],
-        n_steps_per_fit=None,
-        n_episodes_per_fit=1,
+        n_steps_per_fit=n_steps_per_fit,
+        n_episodes_per_fit=n_episodes_per_fit,
         early_stopping_handler=earlystoppinghandler,
         save_best=config_train["save_best"],
         run_id=wandb.run.id,
         tracking="wandb",
         eval_step_info=False,
         print_freq=1,
-        results_dir=RESULTS_DIR,
-        return_dataset=True,
-        return_score=False
+        results_dir=RESULTS_DIR
     )
 
     wandb.finish()

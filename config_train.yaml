@@ -1,10 +1,12 @@
 # for grouping of training run
-agent: "MTS" #lERMMeta
+agent: "RL2PPO" #lERMMeta
 
-n_epochs: 50
+n_epochs: 40000
 n_steps: null 
 
-early_stopping_patience: 50
-early_stopping_warmup: 1000
+val_every: 250
+number_eval: 16
+early_stopping_patience: 30
+early_stopping_warmup: 10 #30
 save_best: True
 results_dir: "results"

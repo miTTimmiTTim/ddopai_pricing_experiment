@@ -1,0 +1,80 @@
+method: "random"
+metric:
+  name: "mean_true_reward"
+  goal: "maximize"
+
+
+num_trials: 1
+  
+parameters:
+  # --- agent choice -------------------------------------------------------
+  config_train-agent:
+    values: ["RL2PPO"]
+
+  # --- learning rates -----------------------------------------------------
+  # actor & critic learning rates (wider range + ratio)
+  config_agent-RL2PPO-learning_rate_actor:
+    distribution: log_uniform_values
+    min: 1e-5
+    max: 1e-3
+  config_agent-RL2PPO-learning_rate_critic:
+    distribution: log_uniform_values
+    min: 1e-5
+    max: 1e-3
+
+
+  # --- discounting & advantage estimation --------------------------------
+  config_agent-RL2PPO-gamma:
+    values: [0.0]
+
+  config_agent-RL2PPO-lam:
+    distribution: uniform
+    min: 0.9
+    max: 0.999
+
+  # --- PPO optimisation hyper‑params -------------------------------------
+  config_agent-RL2PPO-eps_ppo:
+    distribution: uniform
+    min: 0.1
+    max: 0.5
+  config_agent-RL2PPO-n_epochs_policy:
+    values: [1, 2, 3]
+
+  # --- entropy bonus ------------------------------------------------------
+  config_agent-RL2PPO-ent_coeff:
+    distribution: log_uniform_values
+    min: 1e-8
+    max: 1e-3
+
+  # --- meta‑learning episode batching ------------------------------------
+   # meta‑learning batching
+  config_agent-RL2PPO-meta_episodes_per_policy_update:
+    values: [1, 2, 4]
+  config_agent-RL2PPO-meta_episodes_per_learner_batch:
+    values: [8, 16, 32]
+  # --- network architecture ---------------------------------------------
+  config_agent-RL2PPO-hidden_layers_RNN:
+    values: [1, 2, 3]
+  config_agent-RL2PPO-num_hidden_units_RNN:
+    values: [128, 256, 512]
+  config_agent-RL2PPO-RNN_cell:
+    values: ["GRU", "LSTM"]
+  config_agent-RL2PPO-hidden_layers_MLP:
+    values:
+      - [256, 128, 64]
+      - [128, 64]
+      - [64]
+  config_agent-RL2PPO-activation:
+    values: ["tanh", "relu"]
+  config_agent-RL2PPO-drop_prob:
+    values: [0.0]
+
+  # --- optimiser & initialisation ---------------------------------------
+  config_agent-RL2PPO-init_method:
+    values: ["kaiming_uniform", "xavier_uniform"]
+  config_agent-RL2PPO-optimizer:
+    values: ["Adam"]
+
+  # --- loss --------------------------------------------------------------
+  config_agent-RL2PPO-loss:
+    values: ["HUBER", "MSE"]

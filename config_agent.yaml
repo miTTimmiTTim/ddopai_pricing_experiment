@@ -1,6 +1,27 @@
 # Run_specific parameters
 
 ### Agent functions:
+RL2PPO:
+  learning_rate_actor: 1.0e-4          # Higher LR to encourage quick adaptation during short meta-episodes
+  learning_rate_critic: 2.0e-4      # Critic can afford to learn even faster                   # Small batch due to shorter episodes and limited transitions
+  n_epochs_policy: 3                  # How many policy updates in one loop 
+  meta_episodes_per_policy_update: 1  # How many meta-episodes to select from in the policy update 
+  meta_episodes_per_learner_batch: 64  # How many meta-episodes in the Batch
+  eps_ppo: 0.1                       # Default clipping for PPO is usually robust
+  lam: 0.95                    # Standard GAE lambda; controls bias-variance trade-off
+  ent_coeff: 0.03              # Light entropy bonus to encourage early exploration
+  hidden_layers_RNN: 2                # One recurrent layer should suffice for short temporal windows
+  num_hidden_units_RNN: 512           # Reasonable size for GRU/LSTM
+  hidden_layers_MLP: [256, 128]        # For post-RNN processing
+  activation: "tanh"                 # Safe default; allows fast training
+  drop_prob: 0                  # Avoid dropout at first, RNNs already generalize with regularization
+  init_method: "kaiming_uniform"      # Stable initializer
+  optimizer: "Adam"
+  loss: "MSE"
+  device: "cpu"
+  RNN_cell: "GRU"
+  gamma: 1             # GRU is generally faster and simpler than LSTM
+  n_episodes_per_fit: 1            # One episode per fit to adapt quickly
 
 SAC:
   learning_rate_actor: 0.0015        # Increased for faster adaptation in shorter episodes
@@ -20,17 +41,20 @@ SAC:
   optimizer: "Adam"
   loss: "MSE"
   device: "cpu"
-
+  n_steps_per_fit: 1            # One step per fit to adapt quickly
 
 Clairvoyant:
   link: linear
+  n_steps_per_fit: 1
 Greedy:
   ex_prices: [[2], [5]]
   link: linear
+  n_steps_per_fit: 1
 
 ILQX:
   ex_prices: [[2], [5]]
   link: linear
+  n_steps_per_fit: 1
 
 
 TS:
@@ -38,6 +62,7 @@ TS:
   reg: -1
   ex_prices: [[2], [5]]
   link: linear
+  n_steps_per_fit: 1
 
 MTS:
   ex_prices: [[2], [5]]
@@ -46,5 +71,6 @@ MTS:
   lambda_e: 10
   exploration: 1e-2
   c_0: 10
-  N: 50
+  N: 400
+  n_steps_per_fit: 1
 
