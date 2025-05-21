@@ -1,0 +1,115 @@
+  train:
+    parameters:
+      horizon:
+        type: categorical
+        values: [500]
+      nb_features:
+        type: categorical
+        values: [5]
+      sparsity_parameter:
+        type: categorical
+        values: [0.0]
+      noise_std:
+        type: categorical
+        values: [0.1]
+      function_form:
+        type: categorical
+        values: [linear]
+      mean_alpha:
+        type: categorical
+        values: [1.2]
+      mean_beta:
+        type: categorical
+        values: [-0.3]
+      covariance:
+        type: categorical
+        values: [0.2]
+      sparsitiy:
+        type: categorical
+        values: [0.0]
+      inv:
+        type: categorical
+        values: [False]
+      refernce_effects:
+        type: categorical
+        values: [False]
+      inv_level:
+        type: categorical
+        values: [3000]
+  val:
+    parameters:
+      horizon:
+        type: categorical
+        values: [500]
+      nb_features:
+        type: categorical
+        values: [5]
+      sparsity_parameter:
+        type: categorical
+        values: [0.0]
+      noise_std:
+        type: categorical
+        values: [0.1]
+      function_form:
+        type: categorical
+        values: [linear]
+      mean_alpha:
+        type: categorical
+        values: [1.2]
+      mean_beta:
+        type: categorical
+        values: [-0.3]
+      covariance:
+        type: categorical
+        values: [0.2]
+      sparsitiy:
+        type: categorical
+        values: [0.0]
+      inv:
+        type: categorical
+        values: [False]
+      refernce_effects:
+        type: categorical
+        values: [False]
+      inv_level:
+        type: categorical
+        values: [3000]
+  test:
+    parameters:
+      horizon:
+        type: categorical
+        values: [500]
+      nb_features:
+        type: categorical
+        values: [5]
+      sparsity_parameter:
+        type: categorical
+        values: [0.0]
+      noise_std:
+        type: categorical
+        values: [0.1]
+      function_form:
+        type: categorical
+        values: [linear]
+      mean_alpha:
+        type: categorical
+        values: [1.2]
+      mean_beta:
+        type: categorical
+        values: [-0.3]
+      covariance:
+        type: categorical
+        values: [0.2]
+      sparsitiy:
+        type: categorical
+        values: [0.0]
+      inv:
+        type: categorical
+        values: [False]
+      refernce_effects:
+        type: categorical
+        values: [False]
+      inv_level:
+        type: categorical
+        values: [3000]
+      

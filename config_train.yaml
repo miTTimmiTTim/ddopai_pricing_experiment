@@ -1,12 +1,12 @@
 # for grouping of training run
-agent: "RL2PPO" #lERMMeta
+agent: "Clairvoyant" #lERMMeta
 
-n_epochs: 40000
+n_epochs: 100
 n_steps: null 
 
-val_every: 250
+val_every: 5
 number_eval: 16
-early_stopping_patience: 30
-early_stopping_warmup: 10 #30
+early_stopping_patience: 10
+early_stopping_warmup: 5 #30
 save_best: True
 results_dir: "results"

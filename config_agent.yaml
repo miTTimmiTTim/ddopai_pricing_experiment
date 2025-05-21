@@ -24,35 +24,35 @@ RL2PPO:
   n_episodes_per_fit: 1            # One episode per fit to adapt quickly
 
 SAC:
-  learning_rate_actor: 0.0015        # Increased for faster adaptation in shorter episodes
-  learning_rate_critic: 0.005          # Increased for quicker critic updates
-  initial_replay_size: 64
-  max_replay_size: 600               # Reduced to maintain relevance with current MDP data
+  learning_rate_actor: 0.005
+  learning_rate_critic: 0.005
+  initial_replay_size: 32
+  max_replay_size: 256
   batch_size: 32
-  hidden_layers: [64, 32]
+  hidden_layers: [32, 8]
   activation: "relu"
-  warmup_transitions: 10             # Lowered to initiate training sooner given fewer steps per episode
-  lr_alpha: 0.0001                   # Increased for more responsive temperature adjustments
-  tau: 0.001                       # Increased to let the target network adapt more quickly in dynamic environments
+  lr_alpha: 0.005
   log_std_min: -20
   log_std_max: 2
-  target_entropy: -2.0               # Adjusted to encourage adequate exploration over shorter horizons
-  use_log_alpha_loss: True
+  warmup_transitions: 32    # match batch size for full warmup batch
+  tau: 0.005                 # slightly faster target update for tiny setting
+  target_entropy: -1.0      # less entropy (stronger exploitation) for bandit
   optimizer: "Adam"
   loss: "MSE"
   device: "cpu"
-  n_steps_per_fit: 1            # One step per fit to adapt quickly
+  use_log_alpha_loss: True
+  n_steps_per_fit: 1
 
 Clairvoyant:
   link: linear
   n_steps_per_fit: 1
 Greedy:
-  ex_prices: [[2], [5]]
+  ex_prices: [[1.5], [1]]
   link: linear
   n_steps_per_fit: 1
 
 ILQX:
-  ex_prices: [[2], [5]]
+  ex_prices: [[1.5], [1]]
   link: linear
   n_steps_per_fit: 1
 
@@ -60,12 +60,12 @@ ILQX:
 TS:
   lam: 1
   reg: -1
-  ex_prices: [[2], [5]]
+  ex_prices: [[1.5], [1]]
   link: linear
   n_steps_per_fit: 1
 
 MTS:
-  ex_prices: [[2], [5]]
+  ex_prices: [[1.5], [1]]
   link: linear
   sigma: 0.5
   lambda_e: 10
